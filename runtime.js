@@ -1,4 +1,10 @@
 // An object generated when the Start button is pressed.
+// Design decisions: an entry is only saved when end lat/lon is obtained.
+// Otherwise, is considered incomplete and is discarded.
+// Also, async calls are organized within each entry, but may be out of order between entries.
+// This is due to the variability in order they are received, and should only be an issue when the Start/Stop button
+// is clicked in extremely short intervals.
+
 function InitialEntry(row) {
 
 	// Time logic
