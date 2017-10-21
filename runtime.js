@@ -56,7 +56,6 @@ InitialEntry.prototype.populateStartTimeAndLoc = function(startTimeCell, startLo
 			inst.startLat = position.coords.latitude;
 			inst.startLon = position.coords.longitude;
 			inst.startLocStr = "(" + inst.startLat.toFixed(4) + "," + inst.startLon.toFixed(4) + ")";
-			console.log("STARTLOCSTRGEOCALL: " + inst.startLocStr);
 			startLocCell.textContent = inst.startLocStr;
 			inst.startLocRetrieved = true;		// In case this async call finishes AFTER end loc call
 			if (inst.startLocRetrieved && inst.endLocRetrieved && !inst.saveInProgress) {
@@ -100,7 +99,6 @@ InitialEntry.prototype.populateEndTimeAndLoc = function(endTimeCell, endLocCell,
 		inst.endLocStr = "(" + inst.endLat.toFixed(4) + "," + inst.endLon.toFixed(4) + ")";
 		endLocCell.textContent = inst.endLocStr;
 		inst.endLocRetrieved = true;
-		console.log("END LOC LOADED!");
 		if (inst.startLocRetrieved && inst.endLocRetrieved && !inst.saveInProgress) {
 			inst.saveInProgress = true;		// Prevents duplicate saving, ensures all async info is here before saving.
 			inst.saveEntry();
@@ -109,22 +107,16 @@ InitialEntry.prototype.populateEndTimeAndLoc = function(endTimeCell, endLocCell,
 };
 InitialEntry.prototype.saveEntry = function() {
 	// Check if we have pre-existing rows
-	console.log("GOT TO SAVE");
 	var rowCount = localStorage.getItem("rowCount");
 	if (rowCount === null) {
-		console.log("ROWCOUNT NULL: " + rowCount);
 		localStorage.setItem("rowCount", 1);
 	} else {
-		console.log("ROWCOUNT FOUND: " + rowCount);
 		rowCount = parseInt(rowCount) + 1;
 		localStorage.setItem("rowCount", rowCount);
 	}
 	rowCount = parseInt(localStorage.getItem("rowCount"));
-	console.log("ROWCOUNT: " + rowCount);
 	// Convert object into k-v pairs
-	console.log("GOT START");
 	localStorage.setItem("startDate" + rowCount, this.startDate);
-	console.log("GOT POST START");
 	localStorage.setItem("startTime" + rowCount, this.startTime);
 	localStorage.setItem("timeElapsed" + rowCount, this.timeElapsed);
 	localStorage.setItem("endDate" + rowCount, this.endDate);
@@ -138,16 +130,13 @@ InitialEntry.prototype.saveEntry = function() {
 	localStorage.setItem("timeElapsedStr" + rowCount, this.timeElapsedStr);
 	localStorage.setItem("endTimeStr" + rowCount, this.endTimeStr);
 	localStorage.setItem("startLocStr" + rowCount, this.startLocStr);
-	console.log("SAVING STARTLOCSTR: " + this.startLocStr + ", index=" + rowCount);
 	localStorage.setItem("endLocStr" + rowCount, this.endLocStr);
-
-	console.log("FINISHED SAVING");
 };
 InitialEntry.instances = [];		// Stores all existing instances
 
 // Called when Stop button is pressed
 function onStopButtonPressed() {
-	console.log("OnStopButtonPressed");
+	// console.log("OnStopButtonPressed");
 
 	// Update button text
 	var x = document.getElementById("Start_Stop_Button");
@@ -172,7 +161,8 @@ function onStopButtonPressed() {
 // Called when Start button is pressed
 function onStartButtonPressed() {
 	// localStorage.clear();
-	console.log("OnStartButtonPressed");
+	// console.log("OnStartButtonPressed");
+
 	// Update button text
 	var x = document.getElementById("Start_Stop_Button");
 	x.innerHTML = "Stop";
@@ -185,15 +175,15 @@ function createNewRow() {
 	// Insert new row in our records table
 	var table = document.getElementById("timesTable");
 	var row = table.insertRow();
-	// row.length = 5;
 
 	// Generate new record object
 	var newEntry = new InitialEntry(row);
 
 	// Insert Start info cells
 	var startTimeCell = row.insertCell(0);
-	startTimeCell.style.textAlign = "center";
 	var startLocCell = row.insertCell(1);
+
+	startTimeCell.style.textAlign = "center";
 	startLocCell.style.textAlign = "center";
 
 	// Populate Start info
@@ -208,7 +198,6 @@ function onStartStopButtonPressed() {
 		onStopButtonPressed();
 	}
 }
-
 
 function createLoadRow(rowIndex) {
 
@@ -227,7 +216,6 @@ function createLoadRow(rowIndex) {
 	endLocCell.style.textAlign = "center";
 	totalTimeCell.style.textAlign = "center";
 
-	console.log("LOADING ENTRY");
 	var newEntry = new InitialEntry(null);	// Pushed onto our master list by its constructor
 	newEntry.startDate = Date.parse(localStorage.getItem("startDate" + rowIndex));
 
@@ -241,40 +229,32 @@ function createLoadRow(rowIndex) {
 
 	newEntry.startTimeStr = localStorage.getItem("startTimeStr" + rowIndex);
 	startTimeCell.textContent = newEntry.startTimeStr;
-	console.log("STARTIMESTR: " + startTimeCell.textContent);
 
 	newEntry.timeElapsedStr = localStorage.getItem("timeElapsedStr" + rowIndex);
 	totalTimeCell.textContent = newEntry.timeElapsedStr;
-	console.log("TIMEELAPSESTR: " + totalTimeCell.textContent);
 
 	newEntry.endTimeStr = localStorage.getItem("endTimeStr" + rowIndex);
 	endTimeCell.textContent = newEntry.endTimeStr;
-	console.log("ENDTIMECELL: " + endTimeCell.textContent);
 
 	newEntry.startLocStr = localStorage.getItem("startLocStr" + rowIndex);
 	startLocCell.textContent = newEntry.startLocStr;
-	console.log("STARTLOCSTR: " + startLocCell.textContent, + ", index=" + rowIndex);
 
 	newEntry.endLocStr = localStorage.getItem("endLocStr" + rowIndex);
 	endLocCell.textContent = newEntry.endLocStr;
-	console.log("ENDLOCSTR: " + endLocCell.textContent);
-
-	console.log("FINISHED ENTRY");
-
 }
+
 function loadTable() {
 	var rowCount = localStorage.getItem("rowCount");
 	if (rowCount === null) {
 		return;
 	}
-	console.log("LOADING TABLE");
 	// Else, generate our table
 	rowCount = parseInt(rowCount);
 	for (var i = 0; i < rowCount; i++) {
 		createLoadRow(i+1);
 	}
-	console.log("FINISHED LOADING TABLE");
 }
+
 function clearRow(table, rowIndex) {
 	// Convert object into k-v pairs
 	localStorage.removeItem("startDate" + rowIndex);
@@ -294,10 +274,9 @@ function clearRow(table, rowIndex) {
 	localStorage.removeItem("endLocStr" + rowIndex);
 
 	table.deleteRow(-1);
-	console.log("DELETED row=" + rowIndex);
 }
 function onResetTableButtonPressed() {
-	console.log("onResetTableButtonPressed");
+	// console.log("onResetTableButtonPressed");
 	var rowCount = localStorage.getItem("rowCount");
 	if (rowCount === null) {
 		return;
@@ -306,7 +285,6 @@ function onResetTableButtonPressed() {
 	var table = document.getElementById("timesTable");
 	rowCount = parseInt(rowCount);
 	for (var i = 0; i < rowCount; i++) {
-		console.log("CLEARING row=" + (i+1));
 		clearRow(table, i+1);
 	}
 	localStorage.removeItem("rowCount");
