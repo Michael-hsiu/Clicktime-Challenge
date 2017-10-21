@@ -10,17 +10,20 @@ function InitialEntry(row) {
 	this.endTime = -1;
 
 	// Strings for easy save/load
-	this.startTimeStr = "";
-	this.timeElapsedStr = "";
-	this.endTimeStr = "";
-	this.startLocStr = "";
-	this.endLocStr = "";
+	this.startTimeStr = "NaN";
+	this.timeElapsedStr = "NaN";
+	this.endTimeStr = "NaN";
+	this.startLocStr = "NaN";
+	this.endLocStr = "NaN";
 
 	// Ask geolocation API for lat/lon
 	this.startLat = "Loading...";
 	this.startLon = "Loading...";
 	this.endLat = "Loading...";
 	this.endLon = "Loading...";
+	this.startLocRetrieved = false;
+	this.endLocRetrieved = false;
+	this.saveInProgress = false;
 
 	// Table logic
 	this.row = row;		// Row assigned to this entry
@@ -47,13 +50,19 @@ InitialEntry.prototype.populateStartTimeAndLoc = function(startTimeCell, startLo
 	startLocCell.textContent = "(Loading...,Loading...)";		// Indicator text that async call is occurring
 
 	// Ask geolocation API for lat/lon
-	var inst = this;
 	if (this.startLat === "Loading..." || this.startLon === "Loading...") {
+		var inst = this;
 		navigator.geolocation.getCurrentPosition(function(position) {
 			inst.startLat = position.coords.latitude;
 			inst.startLon = position.coords.longitude;
-			this.startLocStr = "(" + inst.startLat.toFixed(4) + "," + inst.startLon.toFixed(4) + ")";
-			startLocCell.textContent = this.startLocStr;
+			inst.startLocStr = "(" + inst.startLat.toFixed(4) + "," + inst.startLon.toFixed(4) + ")";
+			console.log("STARTLOCSTRGEOCALL: " + inst.startLocStr);
+			startLocCell.textContent = inst.startLocStr;
+			inst.startLocRetrieved = true;		// In case this async call finishes AFTER end loc call
+			if (inst.startLocRetrieved && inst.endLocRetrieved) {
+				inst.saveInProgress = true;		// Prevents duplicate saving, ensures all async info is here before saving.
+				inst.saveEntry();
+			}
 		});
 	}
 
@@ -68,6 +77,18 @@ InitialEntry.prototype.populateEndTimeAndLoc = function(endTimeCell, endLocCell,
 	endTimeCell.textContent = this.endTimeStr;
 	endLocCell.textContent = "(Loading...,Loading...)";		// Indicator text that async call is occurring
 
+	// Calculate elapsed time
+	this.timeElapsed = endDate - this.startDate;	// Get time elapsed in ms
+	var timeFormatted = this.timeElapsed / 1000;	// First convert to seconds
+	var timeString;
+	if (timeFormatted % 60 < 10) {
+		timeString = (Math.floor(timeFormatted / 60)) + ":0" + (Math.floor(timeFormatted) % 60);
+		this.timeElapsedStr = timeString;
+	} else {
+		timeString = (Math.floor(timeFormatted / 60)) + ":" + (Math.floor(timeFormatted) % 60);
+		this.timeElapsedStr = timeString;
+	}
+	timeElapsedCell.textContent = timeString;
 
 	// Ask geolocation API for lat/lon
 	var inst = this;
@@ -76,27 +97,17 @@ InitialEntry.prototype.populateEndTimeAndLoc = function(endTimeCell, endLocCell,
 	navigator.geolocation.getCurrentPosition(function(position) {
 		inst.endLat = position.coords.latitude;
 		inst.endLon = position.coords.longitude;
-		this.endLocStr = "(" + inst.endLat.toFixed(4) + "," + inst.endLon.toFixed(4) + ")";
-		endLocCell.textContent = this.endLocStr;
-
-		this.saveEntry();
+		inst.endLocStr = "(" + inst.endLat.toFixed(4) + "," + inst.endLon.toFixed(4) + ")";
+		endLocCell.textContent = inst.endLocStr;
+		inst.endLocRetrieved = true;
+		console.log("END LOC LOADED!");
+		if (inst.startLocRetrieved && inst.endLocRetrieved) {
+			inst.saveInProgress = true;		// Prevents duplicate saving, ensures all async info is here before saving.
+			inst.saveEntry();
+		}
 	});
-
-
-	// Calculate elapsed time
-	this.timeElapsed = endDate - this.startDate;	// Get time elapsed in ms
-	var timeFormatted = this.timeElapsed / 1000;	// First convert to seconds
-	var timeString;
-	if (timeFormatted % 60 < 10) {
-		timeString = (Math.floor(timeFormatted / 60)) + ":0" + (Math.floor(timeFormatted) % 60);
-	} else {
-		timeString = (Math.floor(timeFormatted / 60)) + ":" + (Math.floor(timeFormatted) % 60);
-	}
-	this.timeElapsedStr = timeString;
-	timeElapsedCell.textContent = timeString;
-
 };
-InitialEntry.prototype.saveEntry = function(){
+InitialEntry.prototype.saveEntry = function() {
 	// Check if we have pre-existing rows
 	console.log("GOT TO SAVE");
 	var rowCount = localStorage.getItem("rowCount");
@@ -105,9 +116,10 @@ InitialEntry.prototype.saveEntry = function(){
 		localStorage.setItem("rowCount", 1);
 	} else {
 		console.log("ROWCOUNT FOUND: " + rowCount);
-		localStorage.setItem("rowCount", 1);
+		rowCount = parseInt(rowCount) + 1;
+		localStorage.setItem("rowCount", rowCount);
 	}
-	rowCount = localStorage.getItem("rowCount");
+	rowCount = parseInt(localStorage.getItem("rowCount"));
 	console.log("ROWCOUNT: " + rowCount);
 	// Convert object into k-v pairs
 	console.log("GOT START");
@@ -121,12 +133,21 @@ InitialEntry.prototype.saveEntry = function(){
 	localStorage.setItem("startLon" + rowCount, this.startLon);
 	localStorage.setItem("endLat" + rowCount, this.endLat);
 	localStorage.setItem("endLon" + rowCount, this.endLon);
+
+	localStorage.setItem("startTimeStr" + rowCount, this.startTimeStr);
+	localStorage.setItem("timeElapsedStr" + rowCount, this.timeElapsedStr);
+	localStorage.setItem("endTimeStr" + rowCount, this.endTimeStr);
+	localStorage.setItem("startLocStr" + rowCount, this.startLocStr);
+	console.log("SAVING STARTLOCSTR: " + this.startLocStr + ", index=" + rowCount);
+	localStorage.setItem("endLocStr" + rowCount, this.endLocStr);
+
 	console.log("FINISHED SAVING");
 };
 InitialEntry.instances = [];		// Stores all existing instances
 
 // Called when Stop button is pressed
 function onStopButtonPressed() {
+	console.log("OnStopButtonPressed");
 
 	// Update button text
 	var x = document.getElementById("Start_Stop_Button");
@@ -150,7 +171,8 @@ function onStopButtonPressed() {
 }
 // Called when Start button is pressed
 function onStartButtonPressed() {
-
+	// localStorage.clear();
+	console.log("OnStartButtonPressed");
 	// Update button text
 	var x = document.getElementById("Start_Stop_Button");
 	x.innerHTML = "Stop";
@@ -188,11 +210,6 @@ function onStartStopButtonPressed() {
 }
 
 
-document.getElementById("Start_Stop_Button").addEventListener("click", function() {
-	onStartStopButtonPressed();
-});
-
-
 function createLoadRow(rowIndex) {
 
 	var table = document.getElementById("timesTable");
@@ -222,14 +239,25 @@ function createLoadRow(rowIndex) {
 	newEntry.endLat = parseFloat(localStorage.getItem("endLat" + rowIndex));
 	newEntry.endLon = parseFloat(localStorage.getItem("endLon" + rowIndex));
 
-	startTimeCell.textContent = localStorage.getItem("startTimeStr" + rowIndex);
+	newEntry.startTimeStr = localStorage.getItem("startTimeStr" + rowIndex);
+	startTimeCell.textContent = newEntry.startTimeStr;
 	console.log("STARTIMESTR: " + startTimeCell.textContent);
-	totalTimeCell.textContent = localStorage.getItem("timeElapsedStr" + rowIndex);
+
+	newEntry.timeElapsedStr = localStorage.getItem("timeElapsedStr" + rowIndex);
+	totalTimeCell.textContent = newEntry.timeElapsedStr;
 	console.log("TIMEELAPSESTR: " + totalTimeCell.textContent);
-	endTimeCell.textContent = localStorage.getItem("endTimeStr" + rowIndex);
+
+	newEntry.endTimeStr = localStorage.getItem("endTimeStr" + rowIndex);
+	endTimeCell.textContent = newEntry.endTimeStr;
 	console.log("ENDTIMECELL: " + endTimeCell.textContent);
-	startLocCell.textContent = localStorage.getItem("startLocStr" + rowIndex);
-	endLocCell.textContent = localStorage.getItem("endLocStr" + rowIndex);
+
+	newEntry.startLocStr = localStorage.getItem("startLocStr" + rowIndex);
+	startLocCell.textContent = newEntry.startLocStr;
+	console.log("STARTLOCSTR: " + startLocCell.textContent, + ", index=" + rowIndex);
+
+	newEntry.endLocStr = localStorage.getItem("endLocStr" + rowIndex);
+	endLocCell.textContent = newEntry.endLocStr;
+	console.log("ENDLOCSTR: " + endLocCell.textContent);
 
 	console.log("FINISHED ENTRY");
 
@@ -241,13 +269,11 @@ function loadTable() {
 	}
 	console.log("LOADING TABLE");
 	// Else, generate our table
-	rowCount = Math.floor(parseFloat(rowCount));
+	rowCount = parseInt(rowCount);
 	for (var i = 0; i < rowCount; i++) {
 		createLoadRow(i+1);
 	}
 	console.log("FINISHED LOADING TABLE");
-
-
 }
 function clearRow(rowIndex) {
 	// Convert object into k-v pairs
