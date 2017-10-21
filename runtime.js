@@ -59,7 +59,7 @@ InitialEntry.prototype.populateStartTimeAndLoc = function(startTimeCell, startLo
 			console.log("STARTLOCSTRGEOCALL: " + inst.startLocStr);
 			startLocCell.textContent = inst.startLocStr;
 			inst.startLocRetrieved = true;		// In case this async call finishes AFTER end loc call
-			if (inst.startLocRetrieved && inst.endLocRetrieved) {
+			if (inst.startLocRetrieved && inst.endLocRetrieved && !inst.saveInProgress) {
 				inst.saveInProgress = true;		// Prevents duplicate saving, ensures all async info is here before saving.
 				inst.saveEntry();
 			}
@@ -101,7 +101,7 @@ InitialEntry.prototype.populateEndTimeAndLoc = function(endTimeCell, endLocCell,
 		endLocCell.textContent = inst.endLocStr;
 		inst.endLocRetrieved = true;
 		console.log("END LOC LOADED!");
-		if (inst.startLocRetrieved && inst.endLocRetrieved) {
+		if (inst.startLocRetrieved && inst.endLocRetrieved && !inst.saveInProgress) {
 			inst.saveInProgress = true;		// Prevents duplicate saving, ensures all async info is here before saving.
 			inst.saveEntry();
 		}
@@ -275,7 +275,7 @@ function loadTable() {
 	}
 	console.log("FINISHED LOADING TABLE");
 }
-function clearRow(rowIndex) {
+function clearRow(table, rowIndex) {
 	// Convert object into k-v pairs
 	localStorage.removeItem("startDate" + rowIndex);
 	localStorage.removeItem("startTime" + rowIndex);
@@ -293,21 +293,25 @@ function clearRow(rowIndex) {
 	localStorage.removeItem("startLocStr" + rowIndex);
 	localStorage.removeItem("endLocStr" + rowIndex);
 
+	table.deleteRow(-1);
+	console.log("DELETED row=" + rowIndex);
 }
-function clearTable() {
+function onResetTableButtonPressed() {
+	console.log("onResetTableButtonPressed");
 	var rowCount = localStorage.getItem("rowCount");
 	if (rowCount === null) {
 		return;
 	}
-	// Else, generate our table
-	rowCount = Math.floor(parseFloat(rowCount));
+	// Else, clear our table storage
+	var table = document.getElementById("timesTable");
+	rowCount = parseInt(rowCount);
 	for (var i = 0; i < rowCount; i++) {
-		clearRow(i+1);
+		console.log("CLEARING row=" + (i+1));
+		clearRow(table, i+1);
 	}
 	localStorage.removeItem("rowCount");
 }
 
 window.onload = function() {
-	console.log("RUNNING");
 	loadTable();
 };
